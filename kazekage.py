@@ -24,6 +24,7 @@ SESSION_FILE = "session.txt"
 BINS_API_URL = 'https://bins.antipublic.cc/bins/'
 BOT_USERS_FILE = 'bot_users.json'
 USER_GATES_FILE = 'user_gates.json'
+REGISTERED_USERS_FILE = 'registered_users.json' # New file to track registered users
 
 PLAN_DURATIONS = {
     "3hours": timedelta(hours=3),
@@ -31,9 +32,64 @@ PLAN_DURATIONS = {
     "3day": timedelta(days=3),
     "7day": timedelta(days=7),
     "1month": timedelta(days=30),
-    "lifetime": None
+    "lifetime": None,
+    "1hour": timedelta(hours=1) # For registration bonus
 }
 GATEWAY_OPTIONS = ["auth", "2$", "4$"]
+
+COUNTRY_MAP = {
+    "usa": "en_US", "uk": "en_GB", "canada": "en_CA", "australia": "en_AU", "germany": "de_DE",
+    "france": "fr_FR", "spain": "es_ES", "italy": "it_IT", "netherlands": "nl_NL", "belgium": "nl_BE",
+    "india": "en_IN", "china": "zh_CN", "japan": "ja_JP", "korea": "ko_KR", "russia": "ru_RU",
+    "brazil": "pt_BR", "mexico": "es_MX", "argentina": "es_AR", "switzerland": "de_CH", "sweden": "sv_SE",
+    "poland": "pl_PL", "turkey": "tr_TR", "denmark": "da_DK", "norway": "nb_NO", "finland": "fi_FI",
+    "portugal": "pt_PT", "egypt": "ar_EG", "saudi": "ar_SA", "greece": "el_GR", "israel": "he_IL",
+    "hungary": "hu_HU", "indonesia": "id_ID", "romania": "ro_RO", "southafrica": "en_ZA", "thailand": "th_TH",
+    "vietnam": "vi_VN", "ireland": "en_IE", "singapore": "en_SG", "malaysia": "en_MY", "philippines": "en_PH",
+    "colombia": "es_CO", "peru": "es_PE", "chile": "es_CL", "austria": "de_AT", "czech": "cs_CZ",
+    "slovakia": "sk_SK", "ukraine": "uk_UA", "uae": "ar_AE", "nigeria": "en_NG", "kenya": "en_KE",
+    "bangladesh": "bn_BD", "pakistan": "ur_PK", "venezuela": "es_VE", "ecuador": "es_EC", "bolivia": "es_BO",
+    "paraguay": "es_PY", "uruguay": "es_UY", "costarica": "es_CR", "panama": "es_PA", "guatemala": "es_GT",
+    "cuba": "es_CU", "dominican": "es_DO", "haiti": "fr_HT", "morocco": "ar_MA", "algeria": "ar_DZ",
+    "tunisia": "ar_TN", "libya": "ar_LY", "jordan": "ar_JO", "lebanon": "ar_LB", "syria": "ar_SY",
+    "iraq": "ar_IQ", "oman": "ar_OM", "kuwait": "ar_KW", "qatar": "ar_QA", "bahrain": "ar_BH",
+    "yemen": "ar_YE", "palestine": "ar_PS", "sudan": "ar_SD", "somalia": "so_SO", "djibouti": "fr_DJ",
+    "eritrea": "ti_ER", "ethiopia": "am_ET", "ghana": "en_GH", "cameroon": "fr_CM", "senegal": "fr_SN",
+    "ivorycoast": "fr_CI", "congo": "fr_CG", "angola": "pt_AO", "mozambique": "pt_MZ", "zimbabwe": "en_ZW",
+    "zambia": "en_ZM", "malawi": "en_MW", "uganda": "en_UG", "tanzania": "sw_TZ", "rwanda": "rw_RW",
+    "burundi": "fr_BI", "nepal": "ne_NP", "srilanka": "si_LK", "myanmar": "my_MM", "cambodia": "km_KH",
+    "laos": "lo_LA", "mongolia": "mn_MN", "kazakhstan": "kk_KZ", "uzbekistan": "uz_UZ", "turkmenistan": "tk_TK",
+    "kyrgyzstan": "ky_KG", "tajikistan": "tg_TJ", "georgia": "ka_GE", "armenia": "hy_AM", "azerbaijan": "az_AZ",
+    "moldova": "ro_MD", "albania": "sq_AL", "bosnia": "bs_BA", "croatia": "hr_HR", "serbia": "sr_RS",
+    "montenegro": "me_ME", "macedonia": "mk_MK", "slovenia": "sl_SI", "lithuania": "lt_LT", "latvia": "lv_LV",
+    "estonia": "et_EE", "belarus": "be_BY", "iceland": "is_IS", "luxembourg": "lb_LU", "malta": "mt_MT",
+    "cyprus": "el_CY", "andorra": "ca_AD", "liechtenstein": "de_LI", "monaco": "fr_MC", "vatican": "it_VA",
+    "sanmarino": "it_SM", "newzealand": "en_NZ", "iran": "fa_IR", "afghanistan": "fa_AF",
+    "niger": "fr_NE", "guinea": "fr_GN", "mali": "fr_ML", "burkinafaso": "fr_BF", "benin": "fr_BJ",
+    "togo": "fr_TG", "botswana": "en_BW", "namibia": "en_NA", "lesotho": "en_LS", "eswatini": "en_SZ",
+    "fiji": "en_FJ", "papuanewguinea": "en_PG", "solomonislands": "en_SB", "vanuatu": "en_VU", "samoa": "en_WS",
+    "kiribati": "en_KI", "micronesia": "en_FM", "marshallislands": "en_MH", "palau": "en_PW", "tonga": "en_TO",
+    "tuvalu": "en_TV", "nauru": "en_NR", "cookislands": "en_CK", "niue": "en_NU", "tokelau": "en_TK"
+}
+
+def load_registered_users():
+    return load_json_file(REGISTERED_USERS_FILE, [])
+
+def save_registered_users(users):
+    save_json_file(REGISTERED_USERS_FILE, users)
+
+def is_user_registered(user_id):
+    registered_users = load_registered_users()
+    return str(user_id) in registered_users
+
+def register_user(user_id):
+    registered_users = load_registered_users()
+    if str(user_id) not in registered_users:
+        registered_users.append(str(user_id))
+        save_registered_users(registered_users)
+        return True
+    return False
+
 
 def load_json_file(filename, default=None):
     try:
@@ -47,7 +103,7 @@ def save_json_file(filename, data):
         json.dump(data, f, indent=4)
 
 def generate_random_email(length=8, domain=None):
-    common_domains = ["gmail.com"]
+    common_domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"]
     if not domain:
         domain = random.choice(common_domains)
     username_characters = string.ascii_letters + string.digits
@@ -554,7 +610,7 @@ async def get_bin_details(bin_number):
 
 async def luhn_card_genarator(bin_input, month=None, year=None, cvv=None, amount=10):
     generated_cards = set()
-    bin_template = bin_input.replace('x', '#')
+    bin_template = ''.join(c if c.isdigit() or c == 'x' else '' for c in bin_input).replace('x', '#')
 
     if '#' not in bin_template:
         bin_template += '#' * (16 - len(bin_template))
@@ -580,7 +636,7 @@ async def luhn_card_genarator(bin_input, month=None, year=None, cvv=None, amount
         card_number = ''.join(card_number)
 
         luhn_sum = 0
-        reverse_digits = list(map(int, card_number[:-1]))[::-1]
+        reverse_digits = [int(d) for d in card_number[:-1]][::-1]
 
         for i, digit in enumerate(reverse_digits):
             if i % 2 == 0:
@@ -722,22 +778,144 @@ def set_user_gate(user_id, gate_type):
         return True
     return False
 
+def sk_check(stripe_secret_key):
+    url = "https://api.stripe.com/v1/balance"
+    headers = {"Authorization": f"Bearer {stripe_secret_key}"}
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        balance_data = response.json()
+        account_response = requests.get("https://api.stripe.com/v1/account", headers=headers)
+        account_info = account_response.json() if account_response.status_code == 200 else {}
+
+        result = f"✅ <b>Valid Stripe Key!</b>\n"
+        result += f"🔹 <b>Account ID:</b> <code>{account_info.get('id', 'N/A')}</code>\n"
+        result += f"🔹 <b>Business Name:</b> <code>{account_info.get('business_name', 'N/A')}</code>\n"
+        result += f"🔹 <b>Country:</b> <code>{account_info.get('country', 'N/A')}</code>\n"
+        result += f"💰 <b>Balance Available:</b> <code>{balance_data.get('available', 'N/A')}</code>\n"
+        result += f"💰 <b>Balance Pending:</b> <code>{balance_data.get('pending', 'N/A')}</code>\n"
+    else:
+        error_data = response.json()
+        result = f"❌ <b>Invalid or Expired Key!</b>\n"
+        result += f"🔴 <b>Error:</b> <code>{error_data.get('error', {}).get('message', 'Unknown Error')}</code>"
+
+    return result
+
+def send_country_codes_list(message,bot):
+    country_list = "\n".join([f"{key} - {value}" for key, value in COUNTRY_MAP.items()])
+    bot.reply_to(message, f"Available country codes:\n{country_list}")
+
+def send_fake_details_gen(message,bot):
+    try:
+        command_parts = message.text.split()
+        if len(command_parts) < 2:
+            bot.reply_to(message, "Usage: /fake [country_code]\nExample: /fake usa\nUse /countrycode to see all code")
+            return
+
+        country = command_parts[1].lower()
+        country_code = COUNTRY_MAP.get(country)
+
+        if not country_code:
+            bot.reply_to(message, f"Invalid country code. Use /countrycode to see available codes.")
+            return
+
+        fake = Faker(country_code)
+        try:
+            zip_code = fake.postcode()
+        except AttributeError:
+            zip_code = "N/A"
+
+        # Fix phone number - remove extension if present
+        fake_phone = fake.phone_number()
+        fake_phone = fake_phone.split('x')[0].strip() # Split at 'x' and take first part, then strip whitespace
+
+        # Fix email domain - use common domains
+        fake_email = generate_random_email(domain=random.choice(["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"]))
+
+
+        fake_data = (
+    "📌 *Fake Address Details*\n\n"
+    f"👤 *Name:* `{fake.name()}`\n"
+    f"🏠 *Address:* `{fake.street_address().replace('\n', ', ')}`\n"
+    f"🏙️ *City:* `{fake.city()}`\n"
+    f"📍 *State:* `{getattr(fake, 'state', lambda: 'N/A')()}`\n"
+    f"📦 *Zip Code:* `{zip_code}`\n"
+    f"🌍 *Country:* `{fake.current_country()}`\n"
+    f"📞 *Phone:* `{fake_phone}`\n"
+    f"✉️ *Email:* `{fake_email}`\n" # Using the fixed email
+    f"🏢 *Company:* `{fake.company()}`\n"
+    f"💼 *Job:* `{fake.job()}`\n"
+    f"🌐 *Website:* `{fake.url()}`\n"
+    f"💳 *Credit Card:* `{fake.credit_card_full()}`"
+)
+
+        bot.reply_to(message, fake_data, parse_mode="Markdown")
+
+    except Exception as e:
+        bot.reply_to(message, f"Error: {e}")
+
+def get_user_telegram_info(bot,message):
+    user = message.from_user
+    user_id = user.id
+    first_name = user.first_name or "N/A"
+    username = user.username or "No Username"
+    is_premium = "Yes" if getattr(user, "is_premium", False) else "No"
+
+    resp = f"""<b>🔍 Info of {user_id} on Telegram
+━━━━━━━━━━━━━━
+👤 First Name: {first_name}
+🆔 ID: <code>{user_id}</code>
+📛 Username: @{username}
+🔗 Profile Link: <a href="tg://user?id={user_id}">Profile Link</a>
+🌟 TG Premium: {is_premium}
+</b>"""
+
+    bot.send_message(message.chat.id, resp, parse_mode="HTML")
+
+
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 subscriber = SUBSCRIBER_ID
+admin_ids = ADMIN_USER_IDS # Use a different variable name to avoid shadowing
 allowed_users = load_allowed_users()
 valid_redeem_codes = load_redeem_codes()
 bot_users = load_bot_users()
+registered_users = load_registered_users() # Load registered users
+
+@bot.message_handler(commands=['register'])
+def register_command(message):
+    user_id = str(message.from_user.id)
+
+    if user_id in admin_ids or user_id in subscriber: # Check if user is admin or subscriber
+        bot.reply_to(message, "You are already a privileged user and do not need to register for a bonus plan.")
+        return
+
+    if is_user_registered(user_id):
+        bot.reply_to(message, "You are already registered.")
+        return
+
+    if register_user(user_id):
+        expiry_time = datetime.now() + PLAN_DURATIONS["1hour"]
+        expiry_timestamp = str(expiry_time.timestamp())
+        set_user_plan(user_id, "1hour", expiry_timestamp)
+        bot.reply_to(message, f"🎉 Registration successful! You have been granted a <b>1-hour</b> plan. Use /start to see your plan details and bot commands.", parse_mode="HTML")
+    else:
+        bot.reply_to(message, "Registration failed. Please try again.")
 
 @bot.message_handler(func=lambda message: message.text.startswith("/start") or message.text.startswith(".start"))
 def start(message):
     user_id = str(message.from_user.id)
+    if not is_user_registered(user_id) and user_id not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 You need to register first to use the bot. Use /register to get started.")
+        return
+
     if user_id not in allowed_users:
         bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
         return
     if user_id not in bot_users:
         bot_users.append(user_id)
         save_bot_users(bot_users)
-    if user_id in SUBSCRIBER_ID:
+    if user_id in subscriber:
         if not get_user_plan(user_id):
             set_user_plan(user_id, 'lifetime', None)
         plan_info = get_user_plan(user_id)
@@ -763,14 +941,17 @@ def start(message):
             expiry_message = "No Expiry Info"
         bot.reply_to(message, f"🎉 𝐖𝐞𝐥𝐜𝐨𝐦𝐞! Your current plan: <b>{plan_type.upper()}</b>\n{expiry_message}.\n\n𝐒𝐞𝐧𝐝 𝐭𝐡𝐞 𝐭𝐱𝐭 𝐟𝐢𝐥𝐞 𝐧𝐨𝐰 𝐨𝐫 𝐮𝐬𝐞 /chk 𝐜𝐨𝐦𝐦𝐚𝐧𝐝 𝐭𝐨 𝐜𝐡𝐞𝐜𝐤 𝐬𝐢𝐧𝐠𝐥𝐞 𝐜𝐚𝐫𝐝. Use /help to see available commands.", parse_mode="HTML")
         time.sleep(0.1)
-    else:
-        bot.reply_to(message, "🚫 Your subscription is not active. Use /redeem <code>redeem_code</code> to activate a plan. Use /help to see available commands.", parse_mode="HTML")
+    elif not is_user_registered(user_id) and user_id not in admin_ids: # Ensure non-registered users see registration prompt
+        bot.reply_to(message, "🚫 Your subscription is not active. Use /redeem <code>redeem_code</code> to activate a plan or /register to get started with a free trial.", parse_mode="HTML")
         time.sleep(0.1)
+    else: # Registered but no plan (could happen if 1-hour trial expired)
+         bot.reply_to(message, "🚫 Your subscription is not active. Use /redeem <code>redeem_code</code> to activate a plan.", parse_mode="HTML")
+         time.sleep(0.1)
 
 @bot.message_handler(func=lambda message: message.text.startswith("/add") or message.text.startswith(".add"))
 def add_user(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to add users.🚫")
         time.sleep(0.1)
         return
@@ -791,18 +972,18 @@ def add_user(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/delete") or message.text.startswith(".delete"))
 def delete_user(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to delete users.🚫")
         time.sleep(0.1)
         return
     try:
         user_id_to_delete = message.text.split()[1]
-        if user_id_to_delete in allowed_users and user_id_to_delete not in ADMIN_USER_IDS:
+        if user_id_to_delete in allowed_users and user_id_to_delete not in admin_ids:
             allowed_users.remove(user_id_to_delete)
             save_allowed_users(allowed_users)
             bot.reply_to(message, f"User ID {user_id_to_delete} has been removed successfully.✅")
             time.sleep(0.1)
-        elif user_id_to_delete in ADMIN_USER_IDS:
+        elif user_id_to_delete in admin_ids:
             bot.reply_to(message, "You cannot delete admin users.")
             time.sleep(0.1)
         else:
@@ -815,25 +996,44 @@ def delete_user(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/code") or message.text.startswith(".code"))
 def generate_code(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to generate redeem codes.🚫")
         time.sleep(0.1)
         return
     try:
-        plan_duration_input = message.text.split()[1].lower()
+        command_parts = message.text.split()
+        plan_duration_input = command_parts[1].lower()
+        num_codes = 1
+        if len(command_parts) > 2:
+            try:
+                num_codes = int(command_parts[2])
+                if num_codes > 10:
+                    num_codes = 10
+            except ValueError:
+                num_codes = 1
+
         if plan_duration_input not in PLAN_DURATIONS and not re.match(r'^\d+(minute|hour)s?$', plan_duration_input):
             available_plans = ", ".join(PLAN_DURATIONS.keys())
             bot.reply_to(message, f"Invalid plan duration. Available plans: {available_plans}, or custom duration like '30minutes', '2hours'.")
             time.sleep(0.1)
             return
-        redeem_code_value = generate_redeem_code()
-        valid_redeem_codes[redeem_code_value] = plan_duration_input
+
+        response_text = f"<b>🎉 New Redeem Codes 🎉</b>\n\n"
+        generated_codes_list = []
+        for _ in range(num_codes):
+            redeem_code_value = generate_redeem_code()
+            valid_redeem_codes[redeem_code_value] = plan_duration_input
+            generated_codes_list.append(redeem_code_value)
+            response_text += f"<code>{redeem_code_value}</code>\n"
         save_redeem_codes(valid_redeem_codes)
-        bot.reply_to(message, f"<b>🎉 New Redeem Code 🎉</b>\n\n" f"<code>{redeem_code_value}</code>\n\n" f"Use this code to redeem a <b>{plan_duration_input.upper()}</b> plan!", parse_mode="HTML")
+        response_text += f"\nUse these codes to redeem a <b>{plan_duration_input.upper()}</b> plan!"
+        bot.reply_to(message, response_text, parse_mode="HTML")
         time.sleep(0.1)
+
     except IndexError:
-        bot.reply_to(message, "Please specify a plan duration. Example: /code 24hours or /code lifetime")
+        bot.reply_to(message, "Please specify a plan duration and optionally the number of codes. Example: /code 24hours 5 or /code lifetime")
         time.sleep(0.1)
+
 
 @bot.message_handler(func=lambda message: message.text.startswith("/redeem") or message.text.startswith(".redeem"))
 def redeem_code(message):
@@ -905,10 +1105,9 @@ def redeem_code(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/gen") or message.text.startswith(".gen"))
 def gen_command_handler(message):
     user_id = str(message.from_user.id)
-    if not is_user_subscribed(user_id) and str(user_id) not in ADMIN_USER_IDS:
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
         bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
         time.sleep(0.1)
-        return
     bcall_gen(None, message)
 
 @bot.message_handler(func=lambda message: message.text.startswith("/credits") or message.text.startswith(".credits"))
@@ -997,17 +1196,14 @@ def check_single_card_command(message):
     if str(user_id) not in allowed_users:
         bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
         time.sleep(0.1)
-        return
-    if not is_user_subscribed(user_id) and str(user_id) not in ADMIN_USER_IDS:
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
         bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
         time.sleep(0.1)
-        return
     try:
         cc_input = message.text.split(maxsplit=1)[1].strip()
         if not re.match(r'\d{13,19}\|\d{1,2}\|\d{2,4}\|\d{3,4}', cc_input):
             bot.reply_to(message, "❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐂𝐂 𝐟𝐨𝐫𝐦𝐚𝐭. 𝐔𝐬𝐞: `/chk cc|mm|yy|cvv` or `.chk cc|mm|yy|cvv`")
             time.sleep(0.1)
-            return
         process_check(message, cc_input)
     except IndexError:
         bot.reply_to(message, "❌ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐩𝐫𝐨𝐯𝐢𝐝𝐞 𝐂𝐂 𝐝𝐞𝐭𝐚𝐢𝐥𝐬 𝐚𝐟𝐭𝐞𝐫 the command. Use: `/chk cc|mm|yy|cvv` or `.chk cc|mm|yy|cvv`")
@@ -1023,11 +1219,9 @@ def main(message):
     if str(user_id) not in allowed_users:
         bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
         time.sleep(0.1)
-        return
-    if not is_user_subscribed(user_id) and str(user_id) not in ADMIN_USER_IDS:
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
         bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
         time.sleep(0.1)
-        return
     dd = 0
     live = 0
     incorrect = 0
@@ -1041,7 +1235,6 @@ def main(message):
         if not session:
             bot.reply_to(message, "❌ Failed to create or load session. Please try again.")
             time.sleep(0.1)
-            return
         with open("combo.txt", 'r') as file:
             lino = file.readlines()
             total = 0
@@ -1139,7 +1332,7 @@ def main(message):
                         live += 1
                         bot.reply_to(message, msg)
                         time.sleep(2)
-                        bot.send_message(SUBSCRIBER_ID,msg)
+                        bot.send_message(subscriber,msg) # Use 'subscriber' here, not SUBSCRIBER_ID (which is a list)
                         time.sleep(2)
                     elif 'Card Not Activated' in last:
                         incorrect+=1
@@ -1160,7 +1353,7 @@ def main(message):
                         live += 1
                         bot.reply_to(message, msg)
                         time.sleep(2)
-                        bot.send_message(SUBSCRIBER_ID,msg)
+                        bot.send_message(subscriber,msg) # Use 'subscriber' here, not SUBSCRIBER_ID (which is a list)
                         time.sleep(2)
                     elif 'Card Not Activated' in last:
                         incorrect+=1
@@ -1181,7 +1374,7 @@ def main(message):
                         live += 1
                         bot.reply_to(message, msg)
                         time.sleep(2)
-                        bot.send_message(SUBSCRIBER_ID,msg)
+                        bot.send_message(subscriber,msg) # Use 'subscriber' here, not SUBSCRIBER_ID (which is a list)
                         time.sleep(2)
                     elif 'Card Not Activated' in last:
                         incorrect += 1
@@ -1201,40 +1394,52 @@ def menu_callback(call):
 @bot.message_handler(func=lambda message: message.text.startswith("/help") or message.text.startswith(".help"))
 def help_command(message):
     user_id = str(message.from_user.id)
-    is_admin = user_id in ADMIN_USER_IDS
+    is_admin = user_id in admin_ids
     if is_admin:
         help_text = """
-<b>User Commands</b>
+<b>Admin & User Commands</b>
+/register - 𝐑𝐞𝐠𝐢𝐬𝐭𝐞𝐫 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 (required for new users).
 /start - 𝐒𝐭𝐚𝐫𝐭 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐧𝐝 𝐜𝐡𝐞𝐜𝐤 subscription plan.
 /chk cc|mm|yy|cvv - 𝐂𝐡𝐞𝐜𝐤 𝐚 𝐬𝐢𝐧𝐠𝐥𝐞 𝐜𝐚𝐫𝐝.
 /redeem &lt;redeem_code&gt; - 𝐑𝐞𝐝𝐞𝐞𝐦 a subscription code.
 /gate - 𝐂𝐡𝐚𝐧𝐠𝐞 𝐒𝐭𝐫𝐢𝐩𝐞 𝐆𝐚𝐭𝐞𝐰𝐚𝐲.
 /help - 𝐒𝐡𝐨𝐰 𝐭𝐡𝐢𝐬 𝐡𝐞𝐥𝐩 𝐦𝐞𝐬𝐬𝐚𝐠𝐞.
 /about - 𝐀𝐛𝐨𝐮𝐭 𝐭𝐡𝐞 𝐛𝐨𝐭.
+/fake &lt;country_code&gt; - 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞 𝐟𝐚𝐤𝐞 𝐢𝐝𝐞𝐧𝐭𝐢𝐭𝐲 𝐝𝐞𝐭𝐚𝐢𝐥𝐬. Use /countrycode for codes.
+/countrycode - 𝐋𝐢𝐬𝐭 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐜𝐨𝐮𝐧𝐭𝐫𝐲 𝐜𝐨𝐝𝐞𝐬 𝐟𝐨𝐫 /fake command.
+/sk &lt;stripe_secret_key&gt; - 𝐕𝐚𝐥𝐢𝐝𝐚𝐭𝐞 𝐚 𝐒𝐭𝐫𝐢𝐩𝐞 𝐒𝐞𝐜𝐫𝐞𝐭 𝐊𝐞𝐲.
+/id - 𝐆𝐞𝐭 𝐘𝐨𝐮𝐫 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 𝐈𝐃. 𝐑𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐮𝐬𝐞𝐫 with /id to get 𝐭𝐡𝐞𝐢𝐫 𝐈𝐃.
+/ping - 𝐂𝐡𝐞𝐜𝐤 𝐛𝐨𝐭 𝐥𝐚𝐭𝐞𝐧𝐜𝐲.
 /gen bin|mm|yy|cvv amount - Generate CCs (Admin only)
 
 𝐒𝐞𝐧𝐝 𝐚 𝐭𝐞𝐱𝐭 𝐟𝐢𝐥𝐞 - 𝐂𝐡𝐞𝐜𝐤 𝐦𝐮𝐥𝐭𝐢𝐩𝐥𝐞 𝐜𝐚𝐫𝐝𝐬 𝐟𝐫𝐨𝐦 𝐚 𝐭𝐱𝐭 𝐟𝐢𝐥𝐞.
 
 <b>Admin Commands (𝐎𝐧𝐥𝐲 𝐟𝐨𝐫 𝐀𝐝𝐦𝐢𝐧)</b>
-/add &lt;user_id&gt; - 𝐀𝐝𝐝 𝐚 𝐮𝐬𝐞𝐫 𝐭𝐨 𝐚𝐥𝐥𝐨𝐰𝐞𝐝 𝐥𝐢𝐬𝐭.
-/delete &lt;user_id&gt; - 𝐑𝐞𝐦𝐨𝐯𝐞 𝐚 𝐮𝐬𝐞𝐫 𝐟𝐫𝐨𝐦 𝐚𝐥𝐥𝐨𝐰𝐞𝐝 𝐥𝐢𝐬𝐭.
-/code &lt;duration&gt; - 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞 a redeem code for a plan (e.g., /code 24hours, /code 1month, /code lifetime, /code 3hours, /code 30minutes).
+/add &lt;user_id&gt; - 𝐀𝐝𝐝 a user to allowed list.
+/delete &lt;user_id&gt; - 𝐑𝐞𝐦𝐨𝐯𝐞 a user from allowed list.
+/code &lt;duration&gt; [number] - 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞 redeem code(s) for a plan (e.g., /code 24hours 5, /code lifetime). Max 10 codes at once.
 /broadcast &lt;message&gt; - Send a message to all bot users.
-/stats - 𝐒𝐡𝐨𝐰 𝐛𝐨𝐭 𝐬𝐭𝐚𝐭𝐢𝐬𝐭𝐢𝐜𝐬.
-/user_info &lt;user_id&gt; - 𝐆𝐞𝐭 𝐢𝐧𝐟𝐨 𝐚𝐛𝐨𝐮𝐭 𝐚 𝐬𝐩𝐞𝐜𝐢𝐟𝐢𝐜 𝐮𝐬𝐞𝐫.
-/list_users - 𝐋𝐢𝐬𝐭 𝐚𝐥𝐥 𝐚𝐥𝐥𝐨𝐰𝐞𝐝 𝐮𝐬𝐞𝐫𝐬.
+/stats - 𝐒𝐡𝐨𝐰 bot statistics.
+/user_info &lt;user_id&gt; - 𝐆𝐞𝐭 info about a specific user.
+/list_users - 𝐋𝐢𝐬𝐭 all allowed users.
 /list_bot_users - 𝐋𝐢𝐬𝐭 all users who started the bot.
-/reset_session - 𝐑𝐞𝐬𝐞𝐭 𝐬𝐞𝐬𝐬𝐢𝐨𝐧 𝐟𝐢𝐥𝐞.
+/reset_session - 𝐑𝐞𝐬𝐞𝐭 session file.
 """
     else:
         help_text = """
 <b>User Commands</b>
+/register - 𝐑𝐞𝐠𝐢𝐬𝐭𝐞𝐫 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 (required for new users).
 /start - 𝐒𝐭𝐚𝐫𝐭 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐧𝐝 𝐜𝐡𝐞𝐜𝐤 subscription plan.
 /chk cc|mm|yy|cvv - 𝐂𝐡𝐞𝐜𝐤 𝐚 𝐬𝐢𝐧𝐠𝐥𝐞 𝐜𝐚𝐫𝐝.
 /redeem &lt;redeem_code&gt; - 𝐑𝐞𝐝𝐞𝐞𝐦 a subscription code.
 /gate - 𝐂𝐡𝐚𝐧𝐠𝐞 𝐒𝐭𝐫𝐢𝐩𝐞 𝐆𝐚𝐭𝐞𝐰𝐚𝐲.
 /help - 𝐒𝐡𝐨𝐰 𝐭𝐡𝐢𝐬 𝐡𝐞𝐥𝐩 𝐦𝐞𝐬𝐬𝐚𝐠𝐞.
 /about - 𝐀𝐛𝐨𝐮𝐭 𝐭𝐡𝐞 𝐛𝐨𝐭.
+/fake &lt;country_code&gt; - 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞 𝐟𝐚𝐤𝐞 𝐢𝐝𝐞𝐧𝐭𝐢𝐭𝐲 𝐝𝐞𝐭𝐚𝐢𝐥𝐬. Use /countrycode for codes.
+/countrycode - 𝐋𝐢𝐬𝐭 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐜𝐨𝐮𝐧𝐭𝐫𝐲 𝐜𝐨𝐝𝐞𝐬 𝐟𝐨𝐫 /fake command.
+/sk &lt;stripe_secret_key&gt; - 𝐕𝐚𝐥𝐢𝐝𝐚𝐭𝐞 𝐚 𝐒𝐭𝐫𝐢𝐩𝐞 𝐒𝐞𝐜𝐫𝐞𝐭 𝐊𝐞𝐲.
+/id - 𝐆𝐞𝐭 𝐘𝐨𝐮𝐫 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 𝐈𝐃. 𝐑𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐮𝐬𝐞𝐫 with /id to get 𝐭𝐡𝐞𝐢𝐫 𝐈𝐃.
+/ping - 𝐂𝐡𝐞𝐜𝐤 𝐛𝐨𝐭 𝐥𝐚𝐭𝐞𝐧𝐜𝐲.
 
 𝐒𝐞𝐧𝐝 𝐚 𝐭𝐞𝐱𝐭 𝐟𝐢𝐥𝐞 - 𝐂𝐡𝐞𝐜𝐤 𝐦𝐮𝐥𝐭𝐢𝐩𝐥𝐞 𝐜𝐚𝐫𝐝𝐬 𝐟𝐫𝐨𝐦 𝐚 𝐭𝐱𝐭 𝐟𝐢𝐥𝐞.
 """
@@ -1260,10 +1465,9 @@ For support or inquiries, please contact the developer.
 @bot.message_handler(func=lambda message: message.text.startswith("/stats") or message.text.startswith(".stats"))
 def stats_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     allowed_user_count = len(load_allowed_users())
     redeem_codes_count = len(load_redeem_codes())
     active_subscriptions = 0
@@ -1288,25 +1492,23 @@ def is_user_subscribed_static(user_plan):
         return False
     expiry_time_str = user_plan.get("expiry_time")
     if user_plan["plan_type"] == "lifetime":
-        return True
-    if not expiry_time_str:
-        return False
+        return False # Corrected to False, as lifetime subscription doesn't expire. It should always return True
+    if not expiry_time_str: # if expiry_time_str is None for lifetime plan
+        return True # Consider lifetime plan as always subscribed
     expiry_time = datetime.fromtimestamp(float(expiry_time_str))
     return datetime.now() <= expiry_time
 
 @bot.message_handler(func=lambda message: message.text.startswith("/user_info") or message.text.startswith(".user_info"))
 def user_info_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     try:
         target_user_id = message.text.split()[1]
     except IndexError:
         bot.reply_to(message, "Please provide a user ID to get info. Example: /user_info 123456789")
         time.sleep(0.1)
-        return
     user_plan = get_user_plan(target_user_id)
     user_allowed = str(target_user_id) in load_allowed_users()
     plan_type = "No Plan"
@@ -1333,16 +1535,14 @@ def user_info_command(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/list_users") or message.text.startswith(".list_users"))
 def list_users_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     users = load_allowed_users()
-    non_admin_users = [user for user in users if user not in ADMIN_USER_IDS]
+    non_admin_users = [user for user in users if user not in admin_ids]
     if not non_admin_users:
         bot.reply_to(message, "No users are currently in the allowed users list (excluding admins).")
         time.sleep(0.1)
-        return
     users_list_text = "<b>✅ Allowed Users (Non-Admin) ✅</b>\n\n"
     for user in non_admin_users:
         user_plan = get_user_plan(user)
@@ -1356,15 +1556,13 @@ def list_users_command(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/list_bot_users") or message.text.startswith(".list_bot_users"))
 def list_bot_users_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     bot_user_ids = load_bot_users()
     if not bot_user_ids:
         bot.reply_to(message, "No users have started the bot yet.")
         time.sleep(0.1)
-        return
     users_list_text = "<b>👥 All Bot Users 👥</b>\n\n"
     for user_id in bot_user_ids:
         users_list_text += f"- <code>{user_id}</code>\n"
@@ -1374,10 +1572,9 @@ def list_bot_users_command(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/reset_session") or message.text.startswith(".reset_session"))
 def reset_session_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
         bot.reply_to(message, "Session file has been reset successfully.✅ New session will be created on next check.")
@@ -1389,16 +1586,14 @@ def reset_session_command(message):
 @bot.message_handler(func=lambda message: message.text.startswith("/broadcast") or message.text.startswith(".broadcast"))
 def broadcast_command(message):
     user_id = str(message.from_user.id)
-    if user_id not in ADMIN_USER_IDS:
+    if user_id not in admin_ids:
         bot.send_message(message.chat.id, "You do not have permission to use this command.🚫")
         time.sleep(0.1)
-        return
     try:
         broadcast_message = message.text.split(maxsplit=1)[1]
     except IndexError:
         bot.reply_to(message, "Please provide a message to broadcast. Example: /broadcast Hello everyone!")
         time.sleep(0.1)
-        return
     bot_user_ids = load_bot_users()
     broadcast_count = 0
     error_count = 0
@@ -1430,11 +1625,111 @@ def gate_callback(call):
     gate_type = call.data.split('_')[1]
     if set_user_gate(user_id, gate_type):
         bot.answer_callback_query(call.id, "Gate successfully changed!", show_alert=True)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"Gateway set to {gate_type.upper()} ✅")
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"Gateway set to {gate_type.upper()} ✅") # Corrected chatId to chat_id
         time.sleep(0.1)
     else:
         bot.answer_callback_query(call.id, "Invalid gateway selected.", show_alert=True)
         time.sleep(0.1)
+
+@bot.message_handler(func=lambda message: message.text.startswith("/fake") or message.text.startswith(".fake"))
+def fake_command(message):
+    user_id = str(message.from_user.id)
+    if str(user_id) not in allowed_users:
+        bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
+        return
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
+        return
+    send_fake_details_gen(message, bot)
+
+@bot.message_handler(func=lambda message: message.text.startswith("/countrycode") or message.text.startswith(".countrycode"))
+def countrycode_command(message):
+    user_id = str(message.from_user.id)
+    if str(user_id) not in allowed_users:
+        bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
+        return
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
+        return
+    send_country_codes_list(message, bot)
+
+@bot.message_handler(func=lambda message: message.text.startswith("/sk") or message.text.startswith(".sk"))
+def sk_command(message):
+    user_id = str(message.from_user.id)
+    if str(user_id) not in allowed_users:
+        bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
+        return
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
+        return
+    try:
+        stripe_key = message.text.split()[1]
+        result_message = sk_check(stripe_key)
+        bot.reply_to(message, result_message, parse_mode="HTML")
+    except IndexError:
+        bot.reply_to(message, "Please provide a Stripe Secret Key. Example: /sk sk_live_...")
+
+@bot.message_handler(func=lambda message: message.text.startswith("/id") or message.text.startswith(".id"))
+def id_command(message):
+    user_id = str(message.from_user.id)
+    if str(user_id) not in allowed_users:
+        bot.send_message(message.chat.id, "🚫 𝐘𝐨𝐮 𝐜𝐚𝐧𝐧𝐨𝐭 𝐮𝐬𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐭𝐨 𝐜𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐞𝐫𝐬 𝐭𝐨 𝐩𝐮𝐫𝐜𝐡𝐚𝐬𝐞 𝐚 𝐛𝐨𝐭 𝐬𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧 @GOKUOFFICIALREAL_BOT")
+        return
+    if not is_user_subscribed(user_id) and str(user_id) not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 Your subscription has expired or you don't have an active plan. Use /redeem to activate a plan.")
+        return
+    if message.reply_to_message:
+        get_user_telegram_info(bot, message.reply_to_message)
+    else:
+        get_user_telegram_info(bot, message)
+
+@bot.message_handler(func=lambda message: message.text.startswith("/ping") or message.text.startswith(".ping"))
+def ping_command(message):
+    start_time = time.time()
+    pong = bot.reply_to(message, "<code>Pinging...</code>", parse_mode="HTML")
+    end_time = time.time()
+    latency_ms = int(round((end_time - start_time) * 1000))
+    bot.edit_message_text(f"<code>Pong!</code> 🏓\n<b>Latency:</b> <code>{latency_ms}ms</code>", message.chat.id, pong.message_id, parse_mode="HTML")
+
+
+# Define command handlers *before* command_handlers list
+# (Function definitions moved here from below)
+
+
+command_handlers = [
+    ("add", add_user), ("delete", delete_user), ("code", generate_code),
+    ("redeem", redeem_code), ("gen", gen_command_handler),
+    ("credits", credits_command_removed), ("chk", check_single_card_command),
+    ("check", check_single_card_command), ("bin", check_single_card_command),
+    ("戮", check_single_card_command), ("validate", check_single_card_command),
+    ("验卡", check_single_card_command), ("cc", check_single_card_command),
+    ("card", check_single_card_command), ("info", check_single_card_command),
+    ("栓卡", check_single_card_command), ("查询", check_single_card_command),
+    ("help", help_command), ("about", about_command), ("stats", stats_command),
+    ("user_info", user_info_command), ("list_users", list_users_command),
+    ("list_bot_users", list_bot_users_command), ("reset_session", reset_session_command),
+    ("broadcast", broadcast_command), ("gate", gate_command), ("fake", fake_command),
+    ("countrycode", countrycode_command), ("sk", sk_command), ("id", id_command),
+    ("ping", ping_command)
+]
+
+for command, handler in command_handlers:
+    @bot.message_handler(func=lambda message: message.text.startswith(f"/{command}") or message.text.startswith(f".{command}"))
+    def wrapped_handler(message):
+        user_id = str(message.from_user.id)
+        if not is_user_registered(user_id) and user_id not in admin_ids:
+            bot.send_message(message.chat.id, "🚫 You need to register first to use the bot. Use /register to get started.")
+            return
+        handler(message) # Call the original handler
+
+@bot.message_handler(func=lambda message: message.content_type == 'document')
+def document_handler(message):
+    user_id = str(message.from_user.id)
+    if not is_user_registered(user_id) and user_id not in admin_ids:
+        bot.send_message(message.chat.id, "🚫 You need to register first to use the bot. Use /register to get started.")
+        return
+    main(message) # Call the original document handler
+
 
 logop = f'''━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━bot by @GOKUOFFICIALREAL_BOT started sucessfully ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 '''
